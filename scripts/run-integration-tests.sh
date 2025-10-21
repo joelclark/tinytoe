@@ -73,7 +73,11 @@ echo "DATABASE_URL=${DATABASE_URL}"
 
 # Run all Go tests with the freshly provisioned database.
 if [[ -f go.mod ]]; then
-  go test ./...
+  if command -v gotestsum >/dev/null 2>&1; then
+    gotestsum --format=short-verbose -- ./...
+  else
+    go run gotest.tools/gotestsum@v1.13.0 --format=short-verbose -- ./...
+  fi
 else
   echo "go.mod not found; skipping go test ./..." >&2
 fi
