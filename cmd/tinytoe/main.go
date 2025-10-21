@@ -22,8 +22,10 @@ func main() {
 }
 
 func run(args []string, stdout, stderr io.Writer) error {
-	if err := loadDotenv(".env"); err != nil {
-		return fmt.Errorf("load .env: %w", err)
+	if _, skip := os.LookupEnv("TINYTOE_SKIP_DOTENV"); !skip {
+		if err := loadDotenv(".env"); err != nil {
+			return fmt.Errorf("load .env: %w", err)
+		}
 	}
 
 	if len(args) == 0 || isHelp(args[0]) {

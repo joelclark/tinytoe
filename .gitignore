@@ -1,3 +1,5 @@
 .gocache/
 .gomod/
 
+.env
+migrations/
