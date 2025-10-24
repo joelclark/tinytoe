@@ -40,6 +40,8 @@ func run(args []string, stdout, stderr io.Writer) error {
 			return err
 		}
 		return app.RunInit(context.Background(), cfg, stdout)
+	case "new":
+		return runNewCommand(args[1:], stdout, stderr)
 	case "help":
 		printUsage(stdout)
 		return nil
@@ -58,6 +60,7 @@ func printUsage(w io.Writer) {
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Usage:")
 	fmt.Fprintln(w, "  tinytoe init     Initialize migrations directory and database state")
+	fmt.Fprintln(w, "  tinytoe new      Generate a new migration (tinytoe new [--force] <description>)")
 	fmt.Fprintln(w, "  tinytoe help     Show this message")
 }
 
@@ -123,4 +126,63 @@ func loadDotenv(path string) error {
 	}
 
 	return scanner.Err()
+}
+
+func runNewCommand(args []string, stdout, stderr io.Writer) error {
+	for len(args) > 0 && isHelp(args[0]) {
+		printNewUsage(stdout)
+		return nil
+	}
+
+	if len(args) == 0 {
+		printNewUsage(stderr)
+		return fmt.Errorf("description is required")
+	}
+
+	forceFlag := false
+	forceSpecified := false
+	var descriptionParts []string
+	for _, arg := range args {
+		switch {
+		case arg == "--force":
+			forceFlag = true
+			forceSpecified = true
+		case strings.HasPrefix(arg, "--"):
+			printNewUsage(stderr)
+			return fmt.Errorf("unknown flag %s", arg)
+		default:
+			descriptionParts = append(descriptionParts, arg)
+		}
+	}
+
+	if len(descriptionParts) == 0 {
+		printNewUsage(stderr)
+		return fmt.Errorf("description is required")
+	}
+
+	description := strings.Join(descriptionParts, " ")
+
+	requireDatabase := false
+	opts := config.LoadOptions{
+		RequireDatabase: &requireDatabase,
+	}
+	if forceSpecified {
+		opts.ForceOverride = &forceFlag
+	}
+
+	cfg, err := config.LoadWithOptions(opts)
+	if err != nil {
+		return err
+	}
+
+	_, err = app.RunNew(cfg, description, stdout)
+	return err
+}
+
+func printNewUsage(w io.Writer) {
+	if w == nil {
+		w = io.Discard
+	}
+	fmt.Fprintln(w, "Usage: tinytoe new [--force] <description>")
+	fmt.Fprintln(w, "Creates a new migration file using a UTC timestamp prefix and the provided description.")
 }
