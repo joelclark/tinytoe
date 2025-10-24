@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"tinytoe/internal/config"
+	"tinytoe/internal/ui"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
@@ -44,9 +45,16 @@ func RunInit(ctx context.Context, cfg config.Config, stdout io.Writer) error {
 		return err
 	}
 
-	if stdout != nil {
-		fmt.Fprintf(stdout, "Tiny Toe initialized. Migrations directory: %s\n", cfg.MigrationsDir)
-	}
+	printer := ui.NewPrinter(stdout)
+	printer.PrintDelight(ui.Delight{
+		Command: "init",
+		Result:  "ready to migrate",
+		Details: []ui.Detail{
+			{Label: "Migrations directory", Value: cfg.MigrationsDir},
+			{Label: "Database", Value: "connection verified"},
+			{Label: "Migrations table", Value: "tinytoe_migrations ensured"},
+		},
+	})
 
 	return nil
 }

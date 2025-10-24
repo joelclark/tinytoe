@@ -175,7 +175,7 @@ func runNewCommand(args []string, stdout, stderr io.Writer) error {
 		return err
 	}
 
-	_, err = app.RunNew(cfg, description, stdout)
+	_, err = app.RunNew(cfg, description, os.Stdin, stdout)
 	return err
 }
 

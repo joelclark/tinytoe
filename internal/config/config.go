@@ -10,9 +10,10 @@ import (
 
 // Config captures the minimal configuration needed for Tiny Toe operations.
 type Config struct {
-	DatabaseURL   string
-	MigrationsDir string
-	Force         bool
+	DatabaseURL    string
+	MigrationsDir  string
+	Force          bool
+	NonInteractive bool
 }
 
 // LoadOptions tune how LoadWithOptions behaves for individual commands.
@@ -47,11 +48,17 @@ func LoadWithOptions(opts LoadOptions) (Config, error) {
 		cfg.MigrationsDir = filepath.Clean(cfg.MigrationsDir)
 	}
 
-	force, err := parseForceEnv(os.Getenv("TINYTOE_FORCE"))
+	force, err := parseBoolEnv(os.Getenv("TINYTOE_FORCE"), "TINYTOE_FORCE")
 	if err != nil {
 		return Config{}, err
 	}
 	cfg.Force = force
+
+	nonInteractive, err := parseBoolEnv(os.Getenv("TINYTOE_NON_INTERACTIVE"), "TINYTOE_NON_INTERACTIVE")
+	if err != nil {
+		return Config{}, err
+	}
+	cfg.NonInteractive = nonInteractive
 
 	if opts.ForceOverride != nil {
 		cfg.Force = *opts.ForceOverride
@@ -69,7 +76,7 @@ func LoadWithOptions(opts LoadOptions) (Config, error) {
 	return cfg, nil
 }
 
-func parseForceEnv(raw string) (bool, error) {
+func parseBoolEnv(raw, name string) (bool, error) {
 	value := strings.TrimSpace(raw)
 	if value == "" {
 		return false, nil
@@ -77,7 +84,7 @@ func parseForceEnv(raw string) (bool, error) {
 
 	parsed, err := strconv.ParseBool(value)
 	if err != nil {
-		return false, fmt.Errorf("parse TINYTOE_FORCE: %w", err)
+		return false, fmt.Errorf("parse %s: %w", name, err)
 	}
 	return parsed, nil
 }

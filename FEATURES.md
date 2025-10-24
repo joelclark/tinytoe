@@ -8,6 +8,7 @@
 *   **Reliable:** Simple code with a comprehensive test suite.
 *   **Easy to Get Started:** Installs with a simple curl command.
 *   **Focused:** Only PostgreSQL is supported, more platforms to come in the future.
+*   **Delightful:** Unless disabled, the output of the commands is pleasant and tasteful, using color where appropriate.
 
 #### 2. Prerequisites and Constraints
 *   Supports 64-bit Linux and macOS (ARM and x86).
@@ -20,6 +21,7 @@
     *   When a `search_path` parameter is present, Tiny Toe treats its first schema as the target for destructive resets; otherwise it operates on `public`.
 *   `TINYTOE_MIGRATIONS_DIR`: Path to migrations directory. (Defaults to `./migrations`).
 *   `TINYTOE_FORCE`: Set this to `1` or `TRUE` to bypass interactive confirmation prompts.
+*   `TINYTOE_NON_INTERACTIVE`: When set to `1` or `TRUE`, commands that require confirmation exit with an error instead of prompting.
 *   `TINYTOE_NO_COLOR`: Set to disable colorized output globally (mirrors the `--no-color` CLI flag).
 
 

@@ -14,6 +14,7 @@ import (
 
 	"tinytoe/internal/app"
 	"tinytoe/internal/config"
+	"tinytoe/internal/ui"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
@@ -60,8 +61,13 @@ func TestRunInitCreatesDirAndTable(t *testing.T) {
 		t.Fatalf("second RunInit: %v", err)
 	}
 
-	if !strings.Contains(out.String(), "Tiny Toe initialized") {
-		t.Fatalf("expected success message in output, got %q", out.String())
+	output := out.String()
+	expectedLine := fmt.Sprintf("tinytoe init %s ready to migrate", ui.Arrow)
+	if count := strings.Count(output, expectedLine); count != 2 {
+		t.Fatalf("expected two success messages, got %d; output: %q", count, output)
+	}
+	if !strings.Contains(output, "Migrations directory: "+cfg.MigrationsDir) {
+		t.Fatalf("expected migrations directory in output, got %q", output)
 	}
 
 	if stat, err := os.Stat(cfg.MigrationsDir); err != nil {
