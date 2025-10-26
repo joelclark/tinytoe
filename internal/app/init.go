@@ -54,10 +54,9 @@ func RunInit(ctx context.Context, cfg config.Config, stdout io.Writer) error {
 		Command: "init",
 		Result:  "ready to migrate",
 		Details: []ui.Detail{
-			{Label: "Migrations directory", Value: cfg.MigrationsDir},
-			{Label: "Database", Value: "connection verified"},
-			{Label: "Target schema", Value: cfg.TargetSchema},
-			{Label: "Migrations table", Value: "tinytoe_migrations ensured"},
+			{Label: "Database Connection", Value: "✅ ok"},
+			{Label: "Target Schema", Value: cfg.TargetSchema},
+			{Label: "Migrations Directory", Value: cfg.MigrationsDir},
 		},
 	})
 

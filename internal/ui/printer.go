@@ -121,6 +121,28 @@ func (p Printer) PrintWarning(message string) {
 	fmt.Fprintln(p.w, p.decorateWarning(fmt.Sprintf("%s %s", WarningEmoji, text)))
 }
 
+// PrintSuccessLine renders a single success line using the message styling.
+func (p Printer) PrintSuccessLine(format string, args ...interface{}) {
+	if p.w == nil {
+		return
+	}
+
+	message := strings.TrimRight(fmt.Sprintf(format, args...), "\n")
+	if message == "" {
+		fmt.Fprintln(p.w)
+		return
+	}
+
+	line := fmt.Sprintf("%s %s", SuccessEmoji, message)
+
+	if p.useColor {
+		fmt.Fprintln(p.w, p.decorateValue(line))
+		return
+	}
+
+	fmt.Fprintln(p.w, line)
+}
+
 func shouldUseColor(w io.Writer) bool {
 	if disableColor() {
 		return false
@@ -222,6 +244,9 @@ const Arrow = "➜"
 
 // WarningEmoji is the leading symbol for warning messages.
 const WarningEmoji = "⚠️"
+
+// SuccessEmoji is the leading symbol for success lines.
+const SuccessEmoji = "✅"
 
 // WarningLabel standardizes the text shown for warning details.
 const WarningLabel = "WARNING"

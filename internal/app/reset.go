@@ -43,11 +43,6 @@ func RunReset(ctx context.Context, cfg config.Config, stdin io.Reader, stdout io
 		}
 	}
 
-	files, err := discoverMigrations(cfg.MigrationsDir)
-	if err != nil {
-		return err
-	}
-
 	db, err := sql.Open("pgx", cfg.DatabaseURL)
 	if err != nil {
 		return fmt.Errorf("open database: %w", err)
@@ -61,42 +56,17 @@ func RunReset(ctx context.Context, cfg config.Config, stdin io.Reader, stdout io
 	if err := dropTargetSchema(ctx, db, cfg.TargetSchema); err != nil {
 		return err
 	}
-	if err := ensureTargetSchema(ctx, db, cfg.TargetSchema); err != nil {
-		return err
-	}
-	if err := ensureMigrationsTable(ctx, db, cfg.TargetSchema); err != nil {
-		return err
-	}
 
-	appliedFiles := make([]string, 0, len(files))
-	for _, migration := range files {
-		fmt.Fprintf(stdout, "Applying %s...\n", migration.filename)
-		if err := applyMigration(ctx, db, cfg.TargetSchema, migration); err != nil {
-			return err
-		}
-		appliedFiles = append(appliedFiles, migration.filename)
-		fmt.Fprintf(stdout, "Applied %s\n\n", migration.filename)
-	}
-
-	details := []ui.Detail{
-		{Label: "Schema", Value: cfg.TargetSchema},
-		{Label: "Applied", Value: fmt.Sprintf("%d migration(s)", len(appliedFiles))},
-	}
-	if len(appliedFiles) > 0 {
-		details = append(details, ui.Detail{
-			Label: "Latest",
-			Value: appliedFiles[len(appliedFiles)-1],
-		})
-	}
-
-	printer := ui.NewPrinter(stdout)
-	printer.PrintDelight(ui.Delight{
+	ui.NewPrinter(stdout).PrintDelight(ui.Delight{
 		Command: "reset",
-		Result:  "schema dropped and migrations reapplied",
-		Details: details,
+		Result:  fmt.Sprintf("schema %q dropped", cfg.TargetSchema),
 	})
 
-	return nil
+	if err := RunInit(ctx, cfg, stdout); err != nil {
+		return err
+	}
+
+	return RunUp(ctx, cfg, stdout)
 }
 
 func confirmReset(stdin io.Reader, stdout io.Writer, schema string) (bool, error) {

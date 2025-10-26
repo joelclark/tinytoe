@@ -28,6 +28,8 @@ func RunUp(ctx context.Context, cfg config.Config, stdout io.Writer) error {
 		stdout = io.Discard
 	}
 
+	printer := ui.NewPrinter(stdout)
+
 	if err := requireMigrationsDir(cfg.MigrationsDir); err != nil {
 		return err
 	}
@@ -64,7 +66,7 @@ func RunUp(ctx context.Context, cfg config.Config, stdout io.Writer) error {
 
 	pending := pendingMigrations(files, applied)
 	if len(pending) == 0 {
-		ui.NewPrinter(stdout).PrintDelight(ui.Delight{
+		printer.PrintDelight(ui.Delight{
 			Command: "up",
 			Result:  "database already up to date",
 		})
@@ -73,25 +75,20 @@ func RunUp(ctx context.Context, cfg config.Config, stdout io.Writer) error {
 
 	appliedFiles := make([]string, 0, len(pending))
 	for _, migration := range pending {
-		fmt.Fprintf(stdout, "Applying %s...\n", migration.filename)
 		if err := applyMigration(ctx, db, cfg.TargetSchema, migration); err != nil {
 			return err
 		}
 		appliedFiles = append(appliedFiles, migration.filename)
-		fmt.Fprintf(stdout, "Applied %s\n\n", migration.filename)
+		printer.PrintSuccessLine("Applied %s", migration.filename)
 	}
+
+	fmt.Fprintln(stdout)
 
 	details := []ui.Detail{
 		{Label: "Applied", Value: fmt.Sprintf("%d migration(s)", len(appliedFiles))},
 	}
-	if len(appliedFiles) > 0 {
-		details = append(details, ui.Detail{
-			Label: "Latest",
-			Value: appliedFiles[len(appliedFiles)-1],
-		})
-	}
 
-	ui.NewPrinter(stdout).PrintDelight(ui.Delight{
+	printer.PrintDelight(ui.Delight{
 		Command: "up",
 		Result:  "migrations applied successfully",
 		Details: details,

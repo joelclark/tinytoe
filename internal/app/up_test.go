@@ -13,6 +13,7 @@ import (
 
 	"tinytoe/internal/app"
 	"tinytoe/internal/config"
+	"tinytoe/internal/ui"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
@@ -73,17 +74,19 @@ func TestRunUpAppliesPendingMigrations(t *testing.T) {
 	}
 
 	output := out.String()
-	if !strings.Contains(output, "Applying 20230101010101_create_widgets.sql") {
-		t.Fatalf("expected applying message for first migration, got %q", output)
+	firstAppliedLine := fmt.Sprintf("%s Applied 20230101010101_create_widgets.sql", ui.SuccessEmoji)
+	if !strings.Contains(output, firstAppliedLine) {
+		t.Fatalf("expected applied message for first migration, got %q", output)
+	}
+	secondAppliedLine := fmt.Sprintf("%s Applied 20230101010202_seed_widgets.sql", ui.SuccessEmoji)
+	if !strings.Contains(output, secondAppliedLine) {
+		t.Fatalf("expected applied message for second migration, got %q", output)
 	}
 	if !strings.Contains(output, "migrations applied successfully") {
 		t.Fatalf("expected success message, got %q", output)
 	}
 	if !strings.Contains(output, "Applied: 2 migration(s)") {
 		t.Fatalf("expected count detail, got %q", output)
-	}
-	if !strings.Contains(output, "Latest: 20230101010202_seed_widgets.sql") {
-		t.Fatalf("expected latest detail, got %q", output)
 	}
 
 	schemaDB, err := sql.Open("pgx", migrationDSN)

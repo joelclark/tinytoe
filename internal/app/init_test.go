@@ -67,10 +67,10 @@ func TestRunInitCreatesDirAndTable(t *testing.T) {
 	if count := strings.Count(output, expectedLine); count != 2 {
 		t.Fatalf("expected two success messages, got %d; output: %q", count, output)
 	}
-	if !strings.Contains(output, "Migrations directory: "+cfg.MigrationsDir) {
+	if !strings.Contains(output, "Migrations Directory: "+cfg.MigrationsDir) {
 		t.Fatalf("expected migrations directory in output, got %q", output)
 	}
-	if !strings.Contains(output, "Target schema: "+schema) {
+	if !strings.Contains(output, "Target Schema: "+schema) {
 		t.Fatalf("expected target schema in output, got %q", output)
 	}
 

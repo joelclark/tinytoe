@@ -13,6 +13,7 @@ import (
 
 	"tinytoe/internal/app"
 	"tinytoe/internal/config"
+	"tinytoe/internal/ui"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
@@ -120,8 +121,17 @@ func TestRunResetDropsSchemaAndReappliesMigrations(t *testing.T) {
 	}
 
 	result := output.String()
-	if !strings.Contains(result, "schema dropped and migrations reapplied") {
-		t.Fatalf("expected success message in output, got %q", result)
+	resetLine := fmt.Sprintf("tinytoe reset %s schema %q dropped", ui.Arrow, schema)
+	if !strings.Contains(result, resetLine) {
+		t.Fatalf("expected schema drop output, got %q", result)
+	}
+	initLine := fmt.Sprintf("tinytoe init %s ready to migrate", ui.Arrow)
+	if !strings.Contains(result, initLine) {
+		t.Fatalf("expected init success output, got %q", result)
+	}
+	upLine := fmt.Sprintf("tinytoe up %s migrations applied successfully", ui.Arrow)
+	if !strings.Contains(result, upLine) {
+		t.Fatalf("expected up success output, got %q", result)
 	}
 	if !strings.Contains(result, "Applied: 2 migration(s)") {
 		t.Fatalf("expected applied detail in output, got %q", result)
