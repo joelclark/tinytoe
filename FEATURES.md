@@ -18,7 +18,7 @@
 *   A `.env` file will be loaded if found.
 *   `DATABASE_URL`: The url of the target database.  (e.g. `postgres://bob:secret@1.2.3.4:5432/mydb?sslmode=verify-full`)
     *   The script will also use standard PostgreSQL environment variables (`PGHOST`, `PGPORT`, `PGDATABASE`, `PGUSER`, `PGPASSWORD`).
-    *   When a `search_path` parameter is present, Tiny Toe treats its first schema as the target for destructive resets; otherwise it operates on `public`.
+*   `TINYTOE_TARGET_SCHEMA`: Explicit schema Tiny Toe manages. Defaults to `public` when unset. Values matching system schemas (e.g. `pg_catalog`, `pg_temp`) or empty strings are rejected.
 *   `TINYTOE_MIGRATIONS_DIR`: Path to migrations directory. (Defaults to `./migrations`).
 *   `TINYTOE_FORCE`: Set this to `1` or `TRUE` to bypass interactive confirmation prompts.
 *   `TINYTOE_NON_INTERACTIVE`: When set to `1` or `TRUE`, commands that require confirmation exit with an error instead of prompting.
@@ -47,7 +47,7 @@
     -- Created By: <os/user info if available>
     ```
     followed by a blank line ready for SQL statements. The header captures the on-disk metadata for traceability.
-*   Migration bodies are authored by hand. Tiny Toe wraps each migration file in a single database transaction so the file succeeds or fails atomically; authors should generally provide plain SQL statements without additional `BEGIN/COMMIT` wrappers.  Tiny Toe migrations run inside pgx’s simple protocol.
+*   Migration bodies are authored by hand. Tiny Toe wraps each migration file in a single database transaction so the file succeeds or fails atomically; authors should generally provide plain SQL statements without additional `BEGIN/COMMIT` wrappers.  Each connection issues `SET search_path = <TINYTOE_TARGET_SCHEMA>` before executing statements so objects land in the managed schema. Tiny Toe migrations run inside pgx’s simple protocol.
 
 #### 6. Command Specification
 *   **`toe init`**
@@ -67,7 +67,7 @@
     *   Detects drift (missing or changed applied migrations) and aborts with actionable messaging directing the user to `toe reset`.
 *   **`toe reset`**
     *   Confirms destructive intent interactively unless `TINYTOE_FORCE` is set or a `--force` flag is passed.
-    *   Drops and recreates the schema derived from `DATABASE_URL`'s `search_path` (defaulting to `public`), effectively wiping user data, then recreates the `tinytoe_migrations` table and reapplies all migrations via the `toe up` pipeline.
+    *   Drops and recreates the schema specified by `TINYTOE_TARGET_SCHEMA` (defaulting to `public`), effectively wiping user data, then recreates the `tinytoe_migrations` table and reapplies all migrations via the `toe up` pipeline.
     *   Intended as the only supported way to change an applied migration.
 *   **`toe status`**
     *   Validates configuration and database connectivity.
@@ -88,7 +88,7 @@
     *   Fresh initialization and repeated idempotent runs.
     *   Applying single and multiple migrations, including success and failure rollback behavior.
     *   Drift detection (missing, renamed, or modified applied migrations) halting with actionable messaging.
-    *   `toe reset` wiping data and replaying migrations from scratch.
+    *   `toe reset` wiping the configured target schema and replaying migrations from scratch.
     *   CLI configuration precedence (env overrides, `.env` loading, and flag handling).
 *   Where pure unit tests provide value (e.g., parsing filenames), include them, but prioritize end-to-end coverage.
 

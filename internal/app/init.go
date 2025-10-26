@@ -15,7 +15,7 @@ import (
 )
 
 const migrationsTableDDL = `
-CREATE TABLE IF NOT EXISTS tinytoe_migrations (
+CREATE TABLE IF NOT EXISTS %s (
 	version VARCHAR(255) PRIMARY KEY,
 	filename VARCHAR(1024) NOT NULL,
 	applied_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
@@ -41,7 +41,11 @@ func RunInit(ctx context.Context, cfg config.Config, stdout io.Writer) error {
 		return err
 	}
 
-	if err := ensureMigrationsTable(ctx, db); err != nil {
+	if err := ensureTargetSchema(ctx, db, cfg.TargetSchema); err != nil {
+		return err
+	}
+
+	if err := ensureMigrationsTable(ctx, db, cfg.TargetSchema); err != nil {
 		return err
 	}
 
@@ -52,6 +56,7 @@ func RunInit(ctx context.Context, cfg config.Config, stdout io.Writer) error {
 		Details: []ui.Detail{
 			{Label: "Migrations directory", Value: cfg.MigrationsDir},
 			{Label: "Database", Value: "connection verified"},
+			{Label: "Target schema", Value: cfg.TargetSchema},
 			{Label: "Migrations table", Value: "tinytoe_migrations ensured"},
 		},
 	})
@@ -76,11 +81,23 @@ func pingDatabase(parent context.Context, db *sql.DB) error {
 	return nil
 }
 
-func ensureMigrationsTable(parent context.Context, db *sql.DB) error {
+func ensureTargetSchema(parent context.Context, db *sql.DB, schema string) error {
 	ctx, cancel := context.WithTimeout(parent, 5*time.Second)
 	defer cancel()
 
-	if _, err := db.ExecContext(ctx, migrationsTableDDL); err != nil {
+	stmt := fmt.Sprintf("CREATE SCHEMA IF NOT EXISTS %s", quoteIdent(schema))
+	if _, err := db.ExecContext(ctx, stmt); err != nil {
+		return fmt.Errorf("ensure target schema %q: %w", schema, err)
+	}
+	return nil
+}
+
+func ensureMigrationsTable(parent context.Context, db *sql.DB, schema string) error {
+	ctx, cancel := context.WithTimeout(parent, 5*time.Second)
+	defer cancel()
+
+	stmt := fmt.Sprintf(migrationsTableDDL, qualifyIdent(schema, "tinytoe_migrations"))
+	if _, err := db.ExecContext(ctx, stmt); err != nil {
 		return fmt.Errorf("create migrations table: %w", err)
 	}
 	return nil

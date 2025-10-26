@@ -19,6 +19,7 @@ func TestLoadRequiresDatabaseURL(t *testing.T) {
 func TestLoadUsesDefaultsWhenUnset(t *testing.T) {
 	t.Setenv("DATABASE_URL", "postgres://example.com/db")
 	t.Setenv("TINYTOE_MIGRATIONS_DIR", "")
+	t.Setenv("TINYTOE_TARGET_SCHEMA", "")
 
 	cfg, err := config.Load()
 	if err != nil {
@@ -29,6 +30,9 @@ func TestLoadUsesDefaultsWhenUnset(t *testing.T) {
 	}
 	if cfg.Force {
 		t.Fatalf("expected force flag to default to false")
+	}
+	if cfg.TargetSchema != "public" {
+		t.Fatalf("expected default target schema, got %q", cfg.TargetSchema)
 	}
 }
 
@@ -100,5 +104,27 @@ func TestLoadFailsOnInvalidForceEnv(t *testing.T) {
 
 	if _, err := config.Load(); err == nil || !strings.Contains(err.Error(), "TINYTOE_FORCE") {
 		t.Fatalf("expected error mentioning TINYTOE_FORCE, got %v", err)
+	}
+}
+
+func TestLoadRespectsTargetSchemaEnv(t *testing.T) {
+	t.Setenv("DATABASE_URL", "postgres://example.com/db")
+	t.Setenv("TINYTOE_TARGET_SCHEMA", "tenant_alpha")
+
+	cfg, err := config.Load()
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if cfg.TargetSchema != "tenant_alpha" {
+		t.Fatalf("expected target schema tenant_alpha, got %q", cfg.TargetSchema)
+	}
+}
+
+func TestLoadRejectsReservedTargetSchema(t *testing.T) {
+	t.Setenv("DATABASE_URL", "postgres://example.com/db")
+	t.Setenv("TINYTOE_TARGET_SCHEMA", "pg_catalog")
+
+	if _, err := config.Load(); err == nil || !strings.Contains(err.Error(), "reserved") {
+		t.Fatalf("expected reserved schema error, got %v", err)
 	}
 }

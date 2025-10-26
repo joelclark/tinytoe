@@ -39,17 +39,18 @@ func TestRunInitCreatesDirAndTable(t *testing.T) {
 	}
 	defer adminDB.Close()
 
-	if _, err := adminDB.ExecContext(ctx, fmt.Sprintf("CREATE SCHEMA %s", quoteIdent(schema))); err != nil {
-		t.Fatalf("create schema: %v", err)
-	}
 	t.Cleanup(func() {
 		_, _ = adminDB.ExecContext(context.Background(), fmt.Sprintf("DROP SCHEMA IF EXISTS %s CASCADE", quoteIdent(schema)))
 	})
+	if _, err := adminDB.ExecContext(ctx, fmt.Sprintf("DROP SCHEMA IF EXISTS %s CASCADE", quoteIdent(schema))); err != nil {
+		t.Fatalf("ensure schema absent: %v", err)
+	}
 
 	tempDir := t.TempDir()
 	cfg := config.Config{
 		DatabaseURL:   initDSN,
 		MigrationsDir: filepath.Join(tempDir, "migrations"),
+		TargetSchema:  schema,
 	}
 
 	var out bytes.Buffer
@@ -69,6 +70,9 @@ func TestRunInitCreatesDirAndTable(t *testing.T) {
 	if !strings.Contains(output, "Migrations directory: "+cfg.MigrationsDir) {
 		t.Fatalf("expected migrations directory in output, got %q", output)
 	}
+	if !strings.Contains(output, "Target schema: "+schema) {
+		t.Fatalf("expected target schema in output, got %q", output)
+	}
 
 	if stat, err := os.Stat(cfg.MigrationsDir); err != nil {
 		t.Fatalf("stat migrations dir: %v", err)
@@ -83,6 +87,18 @@ func TestRunInitCreatesDirAndTable(t *testing.T) {
 	defer schemaDB.Close()
 
 	var count int
+	err = adminDB.QueryRowContext(ctx, `
+SELECT COUNT(*) FROM information_schema.schemata
+WHERE schema_name = $1
+`, schema).Scan(&count)
+	if err != nil {
+		t.Fatalf("query schema existence: %v", err)
+	}
+	if count != 1 {
+		t.Fatalf("expected schema %s to exist after init", schema)
+	}
+
+	count = 0
 	err = schemaDB.QueryRowContext(ctx, `
 SELECT COUNT(*) FROM information_schema.tables
 WHERE table_schema = $1 AND table_name = 'tinytoe_migrations'

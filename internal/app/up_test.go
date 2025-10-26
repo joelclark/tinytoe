@@ -24,10 +24,7 @@ func TestRunUpAppliesPendingMigrations(t *testing.T) {
 	}
 
 	schema := fmt.Sprintf("tt_up_apply_%d", time.Now().UnixNano())
-	migrationDSN, err := withSearchPath(dsn, schema)
-	if err != nil {
-		t.Fatalf("prepare DSN: %v", err)
-	}
+	migrationDSN := dsn
 
 	ctx := context.Background()
 	adminDB, err := sql.Open("pgx", dsn)
@@ -67,6 +64,7 @@ func TestRunUpAppliesPendingMigrations(t *testing.T) {
 	cfg := config.Config{
 		DatabaseURL:   migrationDSN,
 		MigrationsDir: migrationsDir,
+		TargetSchema:  schema,
 	}
 
 	var out bytes.Buffer
@@ -93,6 +91,9 @@ func TestRunUpAppliesPendingMigrations(t *testing.T) {
 		t.Fatalf("open schema database: %v", err)
 	}
 	defer schemaDB.Close()
+	if _, err := schemaDB.ExecContext(ctx, fmt.Sprintf("SET search_path = %s", quoteIdent(schema))); err != nil {
+		t.Fatalf("set search_path: %v", err)
+	}
 
 	var count int
 	if err := schemaDB.QueryRowContext(ctx, "SELECT COUNT(*) FROM widgets").Scan(&count); err != nil {
@@ -132,10 +133,7 @@ func TestRunUpDetectsMissingMigrationFile(t *testing.T) {
 	}
 
 	schema := fmt.Sprintf("tt_up_missing_%d", time.Now().UnixNano())
-	migrationDSN, err := withSearchPath(dsn, schema)
-	if err != nil {
-		t.Fatalf("prepare DSN: %v", err)
-	}
+	migrationDSN := dsn
 
 	ctx := context.Background()
 	adminDB, err := sql.Open("pgx", dsn)
@@ -165,6 +163,7 @@ func TestRunUpDetectsMissingMigrationFile(t *testing.T) {
 	cfg := config.Config{
 		DatabaseURL:   migrationDSN,
 		MigrationsDir: migrationsDir,
+		TargetSchema:  schema,
 	}
 
 	if err := app.RunUp(ctx, cfg, nil); err != nil {
@@ -191,10 +190,7 @@ func TestRunUpDetectsRenamedMigrationFile(t *testing.T) {
 	}
 
 	schema := fmt.Sprintf("tt_up_renamed_%d", time.Now().UnixNano())
-	migrationDSN, err := withSearchPath(dsn, schema)
-	if err != nil {
-		t.Fatalf("prepare DSN: %v", err)
-	}
+	migrationDSN := dsn
 
 	ctx := context.Background()
 	adminDB, err := sql.Open("pgx", dsn)
@@ -224,6 +220,7 @@ func TestRunUpDetectsRenamedMigrationFile(t *testing.T) {
 	cfg := config.Config{
 		DatabaseURL:   migrationDSN,
 		MigrationsDir: migrationsDir,
+		TargetSchema:  schema,
 	}
 
 	if err := app.RunUp(ctx, cfg, nil); err != nil {

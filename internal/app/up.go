@@ -46,11 +46,14 @@ func RunUp(ctx context.Context, cfg config.Config, stdout io.Writer) error {
 	if err := pingDatabase(ctx, db); err != nil {
 		return err
 	}
-	if err := ensureMigrationsTable(ctx, db); err != nil {
+	if err := ensureTargetSchema(ctx, db, cfg.TargetSchema); err != nil {
+		return err
+	}
+	if err := ensureMigrationsTable(ctx, db, cfg.TargetSchema); err != nil {
 		return err
 	}
 
-	applied, err := loadAppliedMigrations(ctx, db)
+	applied, err := loadAppliedMigrations(ctx, db, cfg.TargetSchema)
 	if err != nil {
 		return err
 	}
@@ -71,7 +74,7 @@ func RunUp(ctx context.Context, cfg config.Config, stdout io.Writer) error {
 	appliedFiles := make([]string, 0, len(pending))
 	for _, migration := range pending {
 		fmt.Fprintf(stdout, "Applying %s...\n", migration.filename)
-		if err := applyMigration(ctx, db, migration); err != nil {
+		if err := applyMigration(ctx, db, cfg.TargetSchema, migration); err != nil {
 			return err
 		}
 		appliedFiles = append(appliedFiles, migration.filename)
@@ -183,11 +186,12 @@ func isDigits(value string) bool {
 	return true
 }
 
-func loadAppliedMigrations(parent context.Context, db *sql.DB) ([]appliedMigration, error) {
+func loadAppliedMigrations(parent context.Context, db *sql.DB, schema string) ([]appliedMigration, error) {
 	ctx, cancel := context.WithTimeout(parent, 5*time.Second)
 	defer cancel()
 
-	rows, err := db.QueryContext(ctx, `SELECT version, filename FROM tinytoe_migrations ORDER BY version`)
+	query := fmt.Sprintf(`SELECT version, filename FROM %s ORDER BY version`, qualifyIdent(schema, "tinytoe_migrations"))
+	rows, err := db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("load applied migrations: %w", err)
 	}
@@ -245,7 +249,7 @@ func pendingMigrations(files []migrationFile, applied []appliedMigration) []migr
 	return pending
 }
 
-func applyMigration(parent context.Context, db *sql.DB, file migrationFile) error {
+func applyMigration(parent context.Context, db *sql.DB, schema string, file migrationFile) error {
 	data, err := os.ReadFile(file.path)
 	if err != nil {
 		return fmt.Errorf("read migration %s: %w", file.filename, err)
@@ -259,12 +263,18 @@ func applyMigration(parent context.Context, db *sql.DB, file migrationFile) erro
 		return fmt.Errorf("begin transaction for %s: %w", file.filename, err)
 	}
 
+	if _, err := tx.ExecContext(ctx, fmt.Sprintf("SET LOCAL search_path = %s", quoteIdent(schema))); err != nil {
+		_ = tx.Rollback()
+		return fmt.Errorf("set search_path for %s: %w", file.filename, err)
+	}
+
 	if _, err := tx.ExecContext(ctx, string(data)); err != nil {
 		_ = tx.Rollback()
 		return fmt.Errorf("execute migration %s: %w", file.filename, err)
 	}
 
-	if _, err := tx.ExecContext(ctx, `INSERT INTO tinytoe_migrations (version, filename) VALUES ($1, $2)`, file.version, file.filename); err != nil {
+	insert := fmt.Sprintf(`INSERT INTO %s (version, filename) VALUES ($1, $2)`, qualifyIdent(schema, "tinytoe_migrations"))
+	if _, err := tx.ExecContext(ctx, insert, file.version, file.filename); err != nil {
 		_ = tx.Rollback()
 		return fmt.Errorf("record migration %s: %w", file.filename, err)
 	}
