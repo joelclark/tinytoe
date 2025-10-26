@@ -65,9 +65,13 @@
     *   Logs progress to stdout using friendly, colorized output when writing to an interactive TTY. A `--no-color` (and CI-driven `TINYTOE_NO_COLOR`) override forces plain text for pipelines.
     *   Exits with non-zero status on the first failure and, on success, prints the count of newly applied migrations.
     *   Detects drift (missing or changed applied migrations) and aborts with actionable messaging directing the user to `toe reset`.
+*   **`toe dropall`**
+    *   Confirms destructive intent interactively unless `TINYTOE_FORCE` is set or a `--force` flag is passed.
+    *   Drops the schema specified by `TINYTOE_TARGET_SCHEMA`, cleaning out all managed objects; no migrations are reapplied.
+    *   Prints a concise success message on completion.
 *   **`toe reset`**
     *   Confirms destructive intent interactively unless `TINYTOE_FORCE` is set or a `--force` flag is passed.
-    *   Drops and recreates the schema specified by `TINYTOE_TARGET_SCHEMA` (defaulting to `public`), effectively wiping user data, then recreates the `tinytoe_migrations` table and reapplies all migrations via the `toe up` pipeline.
+    *   Internall runs `toe dropall`, followed by `toe init`, then `toe up` to recreate the schema and reapply migrations.
     *   Intended as the only supported way to change an applied migration.
 *   **`toe status`**
     *   Validates configuration and database connectivity.

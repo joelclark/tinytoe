@@ -46,6 +46,8 @@ func run(args []string, stdout, stderr io.Writer) error {
 			return err
 		}
 		return app.RunUp(context.Background(), cfg, stdout)
+	case "dropall":
+		return runDropAllCommand(args[1:], stdout, stderr)
 	case "reset":
 		return runResetCommand(args[1:], stdout, stderr)
 	case "new":
@@ -69,6 +71,7 @@ func printUsage(w io.Writer) {
 	fmt.Fprintln(w, "Usage:")
 	fmt.Fprintln(w, "  tinytoe init     Initialize migrations directory and database state")
 	fmt.Fprintln(w, "  tinytoe up       Apply pending migrations to the database")
+	fmt.Fprintln(w, "  tinytoe dropall  Drop the target schema without reapplying migrations (tinytoe dropall [--force])")
 	fmt.Fprintln(w, "  tinytoe reset    Drop the target schema and reapply all migrations (tinytoe reset [--force])")
 	fmt.Fprintln(w, "  tinytoe new      Generate a new migration (tinytoe new [--force] <description>)")
 	fmt.Fprintln(w, "  tinytoe help     Show this message")
@@ -195,6 +198,49 @@ func printNewUsage(w io.Writer) {
 	}
 	fmt.Fprintln(w, "Usage: tinytoe new [--force] <description>")
 	fmt.Fprintln(w, "Creates a new migration file using a UTC timestamp prefix and the provided description.")
+}
+
+func runDropAllCommand(args []string, stdout, stderr io.Writer) error {
+	for len(args) > 0 && isHelp(args[0]) {
+		printDropAllUsage(stdout)
+		return nil
+	}
+
+	forceFlag := false
+	forceSpecified := false
+	for _, arg := range args {
+		switch {
+		case arg == "--force":
+			forceFlag = true
+			forceSpecified = true
+		case strings.HasPrefix(arg, "--"):
+			printDropAllUsage(stderr)
+			return fmt.Errorf("unknown flag %s", arg)
+		default:
+			printDropAllUsage(stderr)
+			return fmt.Errorf("unexpected argument %s", arg)
+		}
+	}
+
+	opts := config.LoadOptions{}
+	if forceSpecified {
+		opts.ForceOverride = &forceFlag
+	}
+
+	cfg, err := config.LoadWithOptions(opts)
+	if err != nil {
+		return err
+	}
+
+	return app.RunDropAll(context.Background(), cfg, os.Stdin, stdout)
+}
+
+func printDropAllUsage(w io.Writer) {
+	if w == nil {
+		w = io.Discard
+	}
+	fmt.Fprintln(w, "Usage: tinytoe dropall [--force]")
+	fmt.Fprintln(w, "Drops the target schema without recreating it. Use --force to skip the confirmation prompt.")
 }
 
 func runResetCommand(args []string, stdout, stderr io.Writer) error {

@@ -74,6 +74,10 @@ func TestRunUpAppliesPendingMigrations(t *testing.T) {
 	}
 
 	output := out.String()
+	initLine := fmt.Sprintf("tinytoe init %s ready to migrate", ui.Arrow)
+	if !strings.Contains(output, initLine) {
+		t.Fatalf("expected init output, got %q", output)
+	}
 	firstAppliedLine := fmt.Sprintf("%s Applied 20230101010101_create_widgets.sql", ui.SuccessEmoji)
 	if !strings.Contains(output, firstAppliedLine) {
 		t.Fatalf("expected applied message for first migration, got %q", output)
@@ -124,8 +128,12 @@ SELECT EXISTS (
 	if err := app.RunUp(ctx, cfg, &out); err != nil {
 		t.Fatalf("RunUp second pass: %v", err)
 	}
-	if !strings.Contains(out.String(), "database already up to date") {
-		t.Fatalf("expected already up-to-date message, got %q", out.String())
+	secondOutput := out.String()
+	if strings.Contains(secondOutput, initLine) {
+		t.Fatalf("did not expect init output on subsequent run, got %q", secondOutput)
+	}
+	if !strings.Contains(secondOutput, "database already up to date") {
+		t.Fatalf("expected already up-to-date message, got %q", secondOutput)
 	}
 }
 

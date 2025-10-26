@@ -121,9 +121,9 @@ func TestRunResetDropsSchemaAndReappliesMigrations(t *testing.T) {
 	}
 
 	result := output.String()
-	resetLine := fmt.Sprintf("tinytoe reset %s schema %q dropped", ui.Arrow, schema)
-	if !strings.Contains(result, resetLine) {
-		t.Fatalf("expected schema drop output, got %q", result)
+	dropLine := fmt.Sprintf("tinytoe dropall %s schema %q dropped", ui.Arrow, schema)
+	if !strings.Contains(result, dropLine) {
+		t.Fatalf("expected dropall output, got %q", result)
 	}
 	initLine := fmt.Sprintf("tinytoe init %s ready to migrate", ui.Arrow)
 	if !strings.Contains(result, initLine) {
@@ -179,15 +179,15 @@ func TestRunResetAbortsWhenUserDeclines(t *testing.T) {
 	if err == nil {
 		t.Fatalf("expected error when user declines reset")
 	}
-	if !strings.Contains(err.Error(), "reset aborted by user") {
-		t.Fatalf("expected abort error, got %v", err)
+	if !strings.Contains(err.Error(), "dropall aborted by user") {
+		t.Fatalf("expected dropall abort error, got %v", err)
 	}
 
 	output := stdout.String()
 	if !strings.Contains(output, "drop the \"public\" schema") {
 		t.Fatalf("expected warning in output, got %q", output)
 	}
-	if !strings.Contains(output, "Proceed with resetting schema \"public\"? [y/N]: ") {
+	if !strings.Contains(output, "Proceed with dropping schema \"public\"? [y/N]: ") {
 		t.Fatalf("expected prompt in output, got %q", output)
 	}
 }

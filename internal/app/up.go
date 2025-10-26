@@ -51,6 +51,15 @@ func RunUp(ctx context.Context, cfg config.Config, stdout io.Writer) error {
 	if err := ensureTargetSchema(ctx, db, cfg.TargetSchema); err != nil {
 		return err
 	}
+	exists, err := migrationsTableExists(ctx, db, cfg.TargetSchema)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		if err := RunInit(ctx, cfg, stdout); err != nil {
+			return err
+		}
+	}
 	if err := ensureMigrationsTable(ctx, db, cfg.TargetSchema); err != nil {
 		return err
 	}
@@ -106,6 +115,21 @@ type migrationFile struct {
 type appliedMigration struct {
 	version  string
 	filename string
+}
+
+func migrationsTableExists(parent context.Context, db *sql.DB, schema string) (bool, error) {
+	ctx, cancel := context.WithTimeout(parent, 5*time.Second)
+	defer cancel()
+
+	query := `
+SELECT COUNT(*) FROM information_schema.tables
+WHERE table_schema = $1 AND table_name = 'tinytoe_migrations'
+`
+	var count int
+	if err := db.QueryRowContext(ctx, query, schema).Scan(&count); err != nil {
+		return false, fmt.Errorf("check migrations table: %w", err)
+	}
+	return count > 0, nil
 }
 
 func requireMigrationsDir(dir string) error {
