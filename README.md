@@ -12,6 +12,8 @@ Run `./scripts/run-integration-tests.sh` to spin up a disposable PostgreSQL cont
 
 `./scripts/run-unit-tests.sh` drives `go test ./...` with local caches so it stays sandbox-friendly. The script prefers [`gotestsum`](https://github.com/gotesttools/gotestsum) for its richer output; install it with `go install gotest.tools/gotestsum@latest`. If the binary is missing and the module cannot be downloaded, the script falls back to plain `go test`.
 
+Make sure you run `./scripts/warm-module-cache.sh` whenever any dependencies change.
+
 ## Dependencies
 
 We pin the toolchain in `go.mod` (`toolchain go1.24.3`). Running `go version` should report a compatible release; if not, install it via `go install golang.org/dl/go1.24.3@latest` followed by `go1.24.3 download`. 
@@ -23,6 +25,7 @@ To sweep everything at once, run:
 ```bash
 go get -u -t ./...
 go mod tidy
+./scripts/warm-module-cache.sh
 ```
 
 Our helper scripts keep caches inside `.gocache` and `.gomod`, so there is no need for global cache tweaking.

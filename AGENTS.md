@@ -19,8 +19,8 @@
 
 - All code should have test coverage where possible
 - Do not mock up PostgreSQL, just connect to it, the .env file will be set up for you and `./scripts/run-integration-tests.sh` launches an ephemeral database for you to test against
-- Use `./scripts/run-integration-tests.sh` to launch an ephemeral PostgreSQL container on port 5544 and run the Go test suite end-to-end.  (we also call this the smoke test sometimes)
+- Use `./scripts/run-integration-tests.sh` to launch an ephemeral PostgreSQL container on port 5544 and run the Go test suite end-to-end.
 - Place unit tests alongside source files (e.g., `internal/app/init_test.go`) and name them `Test<Scenario>`.
 - Add regression coverage for new behaviors and document any skipped cases in test comments.
 - Never remove a test just to get it to pass, only remove tests when the code being covered is being removed
-- As an agent, you should run `./scripts/run-unit-tests.sh` as often as needed to ensure things are working
+- As an agent, you should run `./scripts/run-unit-tests.sh` as often as needed to ensure things are working  (we also call this the smoke test sometimes)
