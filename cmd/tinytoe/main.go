@@ -40,6 +40,12 @@ func run(args []string, stdout, stderr io.Writer) error {
 			return err
 		}
 		return app.RunInit(context.Background(), cfg, stdout)
+	case "up":
+		cfg, err := config.Load()
+		if err != nil {
+			return err
+		}
+		return app.RunUp(context.Background(), cfg, stdout)
 	case "new":
 		return runNewCommand(args[1:], stdout, stderr)
 	case "help":
@@ -60,6 +66,7 @@ func printUsage(w io.Writer) {
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Usage:")
 	fmt.Fprintln(w, "  tinytoe init     Initialize migrations directory and database state")
+	fmt.Fprintln(w, "  tinytoe up       Apply pending migrations to the database")
 	fmt.Fprintln(w, "  tinytoe new      Generate a new migration (tinytoe new [--force] <description>)")
 	fmt.Fprintln(w, "  tinytoe help     Show this message")
 }

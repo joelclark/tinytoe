@@ -47,7 +47,7 @@
     -- Created By: <os/user info if available>
     ```
     followed by a blank line ready for SQL statements. The header captures the on-disk metadata for traceability.
-*   Migration bodies are authored by hand. Tiny Toe wraps each migration file in a single database transaction so the file succeeds or fails atomically; authors should generally provide plain SQL statements without additional `BEGIN/COMMIT` wrappers.
+*   Migration bodies are authored by hand. Tiny Toe wraps each migration file in a single database transaction so the file succeeds or fails atomically; authors should generally provide plain SQL statements without additional `BEGIN/COMMIT` wrappers.  Tiny Toe migrations run inside pgx’s simple protocol.
 
 #### 6. Command Specification
 *   **`toe init`**
