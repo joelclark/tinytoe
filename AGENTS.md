@@ -23,4 +23,6 @@
 - Place unit tests alongside source files (e.g., `internal/app/init_test.go`) and name them `Test<Scenario>`.
 - Add regression coverage for new behaviors and document any skipped cases in test comments.
 - Never remove a test just to get it to pass, only remove tests when the code being covered is being removed
-- As an agent, you should run `./scripts/run-unit-tests.sh` as often as needed to ensure things are working  (we also call this the smoke test sometimes)
+- As an agent, you should run `./scripts/run-unit-tests.sh` as often as needed to ensure things are working
+- As an agent, you should run `./scripts/run-integration-tests.sh` after major changes to ensure nothing is broken (we also call this the smoke test sometimes)
+
